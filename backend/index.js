@@ -5,7 +5,6 @@ import cors from 'cors';
 import 'dotenv/config';
 import admin from 'firebase-admin';
 import fs from 'fs';
-const serviceKey = JSON.parse(fs.readFileSync('./firebase-key.json','utf8')); 
 
 admin.initializeApp({
   credential: admin.credential.cert({
