@@ -1,0 +1,23 @@
+{
+  "soja": {
+    "name": "Soja",
+    "seed": { "unit": "kg/ha", "value": 60 },
+    "urea": { "unit": "kg/ha", "value": 70 },
+    "fosfato": { "unit": "kg/ha", "value": 30 },
+    "costPerHa": 12250
+  },
+  "maiz": {
+    "name": "Maíz",
+    "seed": { "unit": "kg/ha", "value": 25 },
+    "urea": { "unit": "kg/ha", "value": 100 },
+    "fosfato": { "unit": "kg/ha", "value": 40 },
+    "costPerHa": 18000
+  },
+  "trigo": {
+    "name": "Trigo",
+    "seed": { "unit": "kg/ha", "value": 80 },
+    "urea": { "unit": "kg/ha", "value": 90 },
+    "fosfato": { "unit": "kg/ha", "value": 35 },
+    "costPerHa": 15000
+  }
+}
