@@ -1,0 +1,2 @@
+startCommand = "node index.js"
+buildCommand = "npm install && npm run build"   # si compilas el front aquí
