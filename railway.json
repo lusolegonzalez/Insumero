@@ -1,6 +1,10 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "nixpacksConfigPath": "backend"
+    "root": "backend"
+  },
+  "run": {
+    "cmd": "npm start",
+    "workdir": "backend"
   }
 }
