@@ -4,7 +4,8 @@ import moment from 'moment';
 import cors from 'cors';
 import 'dotenv/config';
 import admin from 'firebase-admin';
-import fs from 'fs';
+import path from 'path';                       // 👈 importa path
+import { fileURLToPath } from 'url';           // para recrear __dirname
 
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -14,7 +15,8 @@ admin.initializeApp({
   })
 });
 
-const __dirname = path.resolve(); 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);   // ahora funciona
 
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
