@@ -13,7 +13,7 @@ yarn.lock
 # Build & cache
 # ───────────────
 # React build output
-frontend/build/
+
 # Vite / CRA cache
 frontend/.cache/
 # Next.js cache
