@@ -8,7 +8,6 @@ import path from 'path';                       // 👈 importa path
 import { fileURLToPath } from 'url';           // para recrear __dirname
 
 const app = express();
-const db = admin.firestore();
 const histoCol = db.collection('historial');
 
 admin.initializeApp({
@@ -18,6 +17,9 @@ admin.initializeApp({
     privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
   })
 });
+
+const db = admin.firestore();
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);   // ahora funciona
