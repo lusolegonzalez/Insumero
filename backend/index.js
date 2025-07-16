@@ -7,6 +7,10 @@ import admin from 'firebase-admin';
 import path from 'path';                       // 👈 importa path
 import { fileURLToPath } from 'url';           // para recrear __dirname
 
+const app = express();
+const db = admin.firestore();
+const histoCol = db.collection('historial');
+
 admin.initializeApp({
   credential: admin.credential.cert({
     projectId: process.env.FIREBASE_PROJECT_ID,
@@ -23,11 +27,6 @@ app.use(express.static(path.join(__dirname, '../frontend/build')));
 app.get('*', (_req, res) =>
   res.sendFile(path.join(__dirname, '../frontend/build/index.html'))
 );
-
-const db = admin.firestore();
-const histoCol = db.collection('historial');
-
-const app = express();
 
 app.use(cors());
 app.use(express.json());  
