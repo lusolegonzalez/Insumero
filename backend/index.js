@@ -21,13 +21,14 @@ const db = admin.firestore();
 const histoCol = db.collection('historial');
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.resolve();  // ahora funciona
+const __dirname = path.dirname(__filename);
 
-//app.use(express.static(path.join(__dirname, 'build')));
-app.use(express.static(path.join(__dirname, '../frontend/build')));
+const buildPath = path.join(__dirname, '../frontend/build');
+
+app.use(express.static(buildPath));
 
 app.get('*', (_req, res) =>
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'))
+  res.sendFile(path.join(buildPath, 'index.html'))
 );
 
 app.use(cors());
