@@ -20,16 +20,7 @@ admin.initializeApp({
 const db = admin.firestore();
 const histoCol = db.collection('historial');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const buildPath = path.join(__dirname, '../frontend/build');
-
-app.use(express.static(buildPath));
-
-app.get('*', (_req, res) =>
-  res.sendFile(path.join(buildPath, 'index.html'))
-);
 
 app.use(cors());
 app.use(express.json());  
@@ -130,3 +121,10 @@ app.get('/api/precios', async (_req, res) => {
     res.status(500).json({ error:'Precios no disponibles' });
   }
 });
+
+// ── Ahora sí: servir React build ──────────────────
+app.use(express.static(buildPath));
+
+app.get('*', (_req, res) =>
+  res.sendFile(path.join(buildPath, 'index.html'))
+);
