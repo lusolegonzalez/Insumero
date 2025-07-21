@@ -23,7 +23,8 @@ const histoCol = db.collection('historial');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.resolve();  // ahora funciona
 
-app.use(express.static(path.join(__dirname, 'build')));
+//app.use(express.static(path.join(__dirname, 'build')));
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 app.get('*', (_req, res) =>
   res.sendFile(path.join(__dirname, 'build', 'index.html'))
