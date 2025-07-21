@@ -20,6 +20,10 @@ admin.initializeApp({
 const db = admin.firestore();
 const histoCol = db.collection('historial');
 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const buildPath = path.join(__dirname, '../frontend/build');
 
 app.use(cors());
@@ -61,11 +65,6 @@ app.get("/api/fob", async (req, res) => {
     res.status(500).json({ error: "No se pudieron obtener precios FOB" });
   }
 });
-
-
-// Arrancar servidor
-app.listen(3001, () => console.log('Insumero API con Firestore 🔥 listo'));
-
 
 /* POST /api/historial */
 app.post('/api/historial', async (req, res) => {
@@ -122,9 +121,13 @@ app.get('/api/precios', async (_req, res) => {
   }
 });
 
-// ── Ahora sí: servir React build ──────────────────
+// ── Servir frontend ──
 app.use(express.static(buildPath));
 
 app.get('*', (_req, res) =>
   res.sendFile(path.join(buildPath, 'index.html'))
 );
+
+// ── Arrancar servidor ──
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Insumero API 🔥 escuchando en ${PORT}`));
