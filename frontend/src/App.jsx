@@ -5,6 +5,7 @@ import { ComparatorPage } from './components/ComparatorPage';
 import { WeatherWidget } from './components/WeatherWidget';
 import { HistoryPage } from './components/HistoryPage';
 import { Navbar } from './components/Navbar';
+import { Dashboard }  from "./components/Dashboard";
 
 export default function App() {
   return (
@@ -12,11 +13,12 @@ export default function App() {
       <Navbar />
       <div className="container pb-5">
         <Routes>
-          <Route path="/" element={<Navigate to="/calculadora" />} />
+          <Route path="/" element={<Dashboard />} />   {/* ⬅ Home = Dashboard */}
           <Route path="/calculadora" element={<CalculatorPage />} />
           <Route path="/comparador" element={<ComparatorPage />} />
           <Route path="/clima" element={<WeatherWidget />} />
           <Route path="/historial" element={<HistoryPage />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
     </div>

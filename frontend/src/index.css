@@ -1,0 +1,27 @@
+.card .display-6 { line-height: 1; }
+.navbar { backdrop-filter: saturate(180%) blur(6px); }
+
+/* Emphasis for bold form labels */
+.col-form-label.fw-bold { color: var(--bs-emphasis-color); }
+
+/* Dark mode tweaks using Bootstrap 5.3 color modes */
+[data-bs-theme='dark'] .bg-light {
+  background-color: var(--bs-dark-bg-subtle) !important;
+  color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme='dark'] .list-group-item {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme='dark'] .form-control,
+[data-bs-theme='dark'] .form-select {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+
+/* Make muted text readable in dark */
+[data-bs-theme='dark'] .text-muted { color: var(--bs-secondary-color) !important; }

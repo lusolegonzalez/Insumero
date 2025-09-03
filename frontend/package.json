@@ -2,6 +2,7 @@
   "name": "insumero-frontend",
   "version": "1.0.0",
   "private": true,
+  "proxy": "http://localhost:3001",
   "dependencies": {
     "bootstrap": "^5.3.7",
     "node-fetch": "^2.7.0",

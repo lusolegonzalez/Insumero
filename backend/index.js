@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import fetch from 'node-fetch';
 import moment from 'moment';
 import cors from 'cors';
@@ -25,6 +26,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const buildPath = path.join(__dirname, '../frontend/build');
+const cropsPath = path.join(__dirname, './crops.json');
 
 app.use(cors());
 app.use(express.json());  
@@ -46,23 +48,70 @@ app.get("/api/fob", async (req, res) => {
   try {
     console.log("Obteniendo precios FOB...");
     const today = moment().format("DD/MM/YYYY");
-    const response = await fetch(`https://monitorsiogranos.magyp.gob.ar/ws/ssma/precios_fob.php?Fecha=27/06/2025`);
-    const text = await response.text();
-    const data = JSON.parse(text);
+    const data = await withCache('fob_precios', (CACHE_MIN > 0 ? CACHE_MIN : 60) * 60 * 1000, async () => {
+      const response = await fetch(`https://monitorsiogranos.magyp.gob.ar/ws/ssma/precios_fob.php?Fecha=${today}`);
+      const text = await response.text();
+      const parsed = JSON.parse(text);
 
-    const precios = {};
-
-    data.posts.forEach(entry => {
-      const nombre = productosFOB[entry.posicion];
-      if (nombre && !precios[nombre]) {
-        precios[nombre] = entry.precio;
-      }
+      const precios = {};
+      parsed.posts.forEach(entry => {
+        const nombre = productosFOB[entry.posicion];
+        if (nombre && !precios[nombre]) {
+          precios[nombre] = entry.precio;
+        }
+      });
+      return precios;
     });
 
-    res.json(precios);
+    res.json(data);
   } catch (err) {
     console.error("Error al obtener precios FOB:", err);
     res.status(500).json({ error: "No se pudieron obtener precios FOB" });
+  } 
+});
+
+// Exponer cultivos y requerimientos (desde crops.json)
+app.get('/api/cultivos', (_req, res) => {
+  try {
+    const raw = fs.readFileSync(cropsPath, 'utf8');
+    const json = JSON.parse(raw);
+    res.json(json);
+  } catch (e) {
+    console.error('Error leyendo crops.json', e);
+    res.status(500).json({ error: 'No se pudieron leer los cultivos' });
+  }
+});
+
+// Calcular margen por hectárea: { cultivo, rendimiento_t_ha, precio_usd_ton }
+app.post('/api/margen', (req, res) => {
+  try {
+    const { cultivo, rendimiento_t_ha, precio_usd_ton } = req.body || {};
+    if (!cultivo || typeof rendimiento_t_ha !== 'number' || typeof precio_usd_ton !== 'number') {
+      return res.status(400).json({
+        error: 'Parámetros inválidos. Esperado cultivo, rendimiento_t_ha (number), precio_usd_ton (number)'
+      });
+    }
+
+    const raw = fs.readFileSync(cropsPath, 'utf8');
+    const crops = JSON.parse(raw);
+    const info = crops[cultivo];
+    if (!info) return res.status(404).json({ error: `Cultivo no encontrado: ${cultivo}` });
+
+    const ingreso_usd_ha = +(rendimiento_t_ha * precio_usd_ton).toFixed(2);
+    const costo_usd_ha = Number(info.costPerHa) || 0;
+    const margen_usd_ha = +(ingreso_usd_ha - costo_usd_ha).toFixed(2);
+
+    res.json({
+      cultivo,
+      rendimiento_t_ha,
+      precio_usd_ton,
+      ingreso_usd_ha,
+      costo_usd_ha,
+      margen_usd_ha
+    });
+  } catch (e) {
+    console.error('Error calculando margen', e);
+    res.status(500).json({ error: 'No se pudo calcular el margen' });
   }
 });
 
@@ -106,18 +155,67 @@ const getPrice = async sym => {
 // bushel → tonelada
 const FACTOR = { soja:27.216, maiz:39.368, trigo:36.744 };
 
+// Cache simple en memoria
+const CACHE = new Map(); // key -> { t:number, data:any }
+const CACHE_MIN = Number(process.env.CACHE_MIN || 0);
+const withCache = async (key, ttlMs, producer) => {
+  const now = Date.now();
+  const hit = CACHE.get(key);
+  if (hit && now - hit.t < ttlMs) return hit.data;
+  const data = await producer();
+  CACHE.set(key, { t: now, data });
+  return data;
+};
+
 app.get('/api/precios', async (_req, res) => {
   try {
-    const entries = await Promise.all(
-      Object.entries(YH).map(async ([k,sym]) => {
-        const bu = await getPrice(sym);
-        return [k, +(bu * FACTOR[k]).toFixed(2)];      // USD/ton
-      })
-    );
-    res.json(Object.fromEntries(entries));            // { soja, maiz, trigo }
+    const data = await withCache('precios_usd_ton', (CACHE_MIN > 0 ? CACHE_MIN : 5) * 60 * 1000, async () => {
+      const entries = await Promise.all(
+        Object.entries(YH).map(async ([k, sym]) => {
+          const bu = await getPrice(sym);
+          return [k, +(bu * FACTOR[k]).toFixed(2)];      // USD/ton
+        })
+      );
+      return Object.fromEntries(entries);            // { soja, maiz, trigo }
+    });
+    res.json(data);
   } catch (e) {
     console.error('Yahoo error', e.message);
     res.status(500).json({ error:'Precios no disponibles' });
+  }
+});
+
+// --- Historia de precios: /api/precios/hist?commodity=soja&days=7 ---
+// symbols Yahoo
+const YSYM = { soja: 'ZS=F', maiz: 'ZC=F', trigo: 'ZW=F' };
+// bushel → tonelada
+const TON = { soja: 27.216, maiz: 39.368, trigo: 36.744 };
+
+app.get('/api/precios/hist', async (req, res) => {
+  try {
+    const commodity = (req.query.commodity || 'soja').toLowerCase();
+    const days = Math.max(1, Math.min(365, Number(req.query.days) || 7));
+    const sym = YSYM[commodity];
+    if (!sym) return res.status(400).json({ error: 'commodity inválido' });
+
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?range=${days}d&interval=1d`;
+    const json = await fetch(url).then(r => r.json());
+    const r = json?.chart?.result?.[0];
+    if (!r) return res.status(502).json({ error: 'Yahoo sin datos' });
+
+    const ts = r.timestamp; // epoch seconds[]
+    const closes = r.indicators?.quote?.[0]?.close || [];
+    const factor = TON[commodity];
+
+    const series = ts.map((t, i) => ({
+      date: new Date(t * 1000).toISOString().slice(0, 10),
+      usdTon: closes[i] != null ? +(closes[i] * factor).toFixed(2) : null,
+    })).filter(p => p.usdTon != null);
+
+    res.json({ commodity, days, series });
+  } catch (e) {
+    console.error('hist precios', e);
+    res.status(500).json({ error: 'No se pudo obtener historial' });
   }
 });
 
